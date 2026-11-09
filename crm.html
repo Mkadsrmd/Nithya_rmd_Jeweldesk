@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#172231">
+  <title>ThangamOS — Customer Visits & Follow-ups</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/crm.css">
+  <link rel="stylesheet" href="css/billing.css">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/thangamos.css">
+</head>
+<body class="booting" data-module="crm">
+  <div class="auth-screen" id="authScreen" hidden>
+    <form class="auth-card simple-login" id="loginForm">
+      <div class="simple-login-brand"><div class="simple-mark">JO</div><h1>ThangamOS</h1></div>
+      <div class="login-type" role="group" aria-label="Login type">
+        <button type="button" class="login-type-btn active" data-login-type="client">Client Login</button>
+        <button type="button" class="login-type-btn" data-login-type="admin">Admin Login</button>
+      </div>
+      <input id="loginType" type="hidden" value="client">
+      <label><span>Email</span><input id="loginEmail" type="email" autocomplete="username" required></label>
+      <label><span>Password</span><input id="loginPassword" type="password" autocomplete="current-password" required></label>
+      <button class="button primary full-button" id="loginSubmit" type="submit">Client Login</button>
+      <small id="loginError"></small>
+      <div class="simple-login-footer">Developed by <b>MK Designs and Ads</b> · <a href="https://mkads.in" target="_blank" rel="noopener">mkads.in</a></div>
+    </form>
+  </div>
+
+  <div class="hold-screen" id="holdScreen" hidden><div class="hold-card"><div class="login-brand"><span>JO</span><div><b>ThangamOS</b><small>Subscription access</small></div></div><p class="kicker">ACCOUNT ON HOLD</p><h1>Subscription renewal required</h1><p id="holdMessage">Your records are safely retained. Please contact the administrator to restore access.</p><div><button class="button primary" id="holdContact">Contact administrator</button><button class="button secondary" id="holdSignOut">Sign out</button></div></div></div>
+
+  <section class="admin-shell" id="adminShell" hidden>
+    <header class="admin-header"><div class="login-brand"><span>JO</span><div><b>ThangamOS Control</b><small>Subscription administration</small></div></div><div><span id="adminIdentity">Platform administrator</span><button class="button secondary" id="adminSignOut">Sign out</button></div></header>
+    <main class="admin-main">
+      <div class="page-heading"><div><p class="kicker">MK PLATFORM CONTROL</p><h2>Client control centre</h2><p>Subscriptions, access, modules and audit history.</p></div><button class="button secondary" id="refreshAdmin">Refresh</button></div>
+      <div class="metric-strip" id="adminMetrics"></div>
+      <div class="admin-filter"><input id="adminShopSearch" placeholder="Search shop name"><select id="adminStatusFilter"><option value="all">All subscription states</option><option value="active">Active</option><option value="due">Payment due</option><option value="grace">Grace period</option><option value="read_only">Read only</option><option value="suspended">Suspended</option></select></div>
+      <div class="table-card"><div class="table-scroll"><table><thead><tr><th>Client</th><th>Users</th><th>Plan</th><th>Payment</th><th>Expiry</th><th>Access</th><th>Modules</th><th>Action</th></tr></thead><tbody id="adminShopTable"></tbody></table></div></div>
+      <div class="admin-safety"><b>Privacy boundary</b><span>Platform administration is metadata-only. Customer, invoice and jewellery records remain inside each client tenant.</span></div><div class="table-card" style="margin-top:18px"><div style="padding:16px 18px;border-bottom:1px solid var(--border,#ddd)"><b>Recent admin activity</b></div><div class="table-scroll"><table><thead><tr><th>Time</th><th>Client</th><th>Action</th><th>Reason / Reference</th></tr></thead><tbody id="adminLogTable"></tbody></table></div></div>
+    
+  </main>
+  </section>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">JO</div>
+      <div><strong>ThangamOS</strong><small>Customer CRM</small></div>
+    </div>
+    <div class="nav-search"><input id="navSearch" placeholder="Search menu…" autocomplete="off"><span>⌕</span></div>
+    <nav class="nav" id="mainNav">
+      <p class="nav-group">Sales</p>
+      <button class="nav-item active" data-page="home">Home</button>
+      <button class="nav-item" data-page="pos">POS Billing</button>
+      <button class="nav-item" data-page="sales">Sales Register</button>
+      <button class="nav-item" data-page="accounts">Client Accounts</button>
+      <button class="nav-item" data-page="places">Places</button>
+      <button class="nav-item" data-page="estimates">Estimates</button>
+      <button class="nav-item" data-page="orders">Orders &amp; Advance</button>
+      <button class="nav-item" data-page="repairs">Repairs</button>
+      <button class="nav-item" data-page="dayend">Day-End Closing</button>
+      <p class="nav-group">Customers</p>
+      <button class="nav-item" data-page="crmhub">CRM Hub</button>
+      <button class="nav-item" data-page="customers">Customers</button>
+      <button class="nav-item" data-page="visit">Quick Visit</button>
+      <button class="nav-item" data-page="followups">Follow-ups <em id="followupBadge">0</em></button>
+      <button class="nav-item" data-page="paymentfollowups">Payment Follow-ups <em id="tosPayBadge">0</em></button>
+      <button class="nav-item" data-page="groups">Customer Groups</button>
+      <button class="nav-item" data-page="campaigns">Campaigns</button>
+      <p class="nav-group">Shop</p>
+      <button class="nav-item" data-page="reports">Reports</button>
+      <button class="nav-item" data-page="staff">Staff &amp; Attendance</button>
+      <button class="nav-item" data-page="compliance">Privacy &amp; Compliance</button>
+      <button class="nav-item" data-page="activity">Activity Log</button>
+      <button class="nav-item" data-page="settings">Settings</button>
+    </nav>
+    <div class="sidebar-foot" id="sidebarFoot">
+      <div class="sb-user"><b id="sbUserName">Local test</b><small id="sbUserRole">Data saved in this browser</small><small id="blSyncState" class="sb-sync" hidden></small></div>
+      <button class="sb-logout" id="logoutButton">Logout</button>
+    </div></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="menu-button" id="menuButton" aria-label="Open menu">☰</button>
+      <div class="title-block"><p id="shopLabel">JEWELOS</p><h1 id="pageTitle">Today</h1></div>
+      <div class="top-actions">
+        <span class="sync-status local" id="syncStatus"><i></i><b>Local mode</b></span>
+        <label class="top-search"><span>⌕</span><input id="globalSearch" placeholder="Search name or mobile"></label>
+        <button class="button primary" data-go="visit">+ Record visit</button>
+      </div>
+    </header>
+    <div class="subscription-banner" id="subscriptionBanner" hidden><div><b id="subscriptionTitle">Subscription reminder</b><span id="subscriptionMessage"></span></div><button class="button secondary" id="renewalContact">Contact administrator</button></div>
+
+    <section class="page active" id="todayPage">
+      <div class="page-heading compact-heading">
+        <div><p class="kicker">DAILY WORK DESK</p><h2 id="todayGreeting">Today at Nithya Jewellery</h2><p>Visits, pending follow-ups and customer occasions that need attention.</p></div>
+        <div class="date-label" id="todayDate"></div>
+      </div>
+      <div class="metric-strip bl-home-strip">
+        <div class="metric"><span>Today's sales</span><strong id="bl-home-sales">₹0</strong></div>
+        <div class="metric"><span>Collected today</span><strong id="bl-home-collected">₹0</strong></div>
+        <div class="metric"><span>Pending dues</span><strong id="bl-home-due">₹0</strong></div>
+        <div class="metric"><span>Bills today</span><strong id="bl-home-bills">0</strong></div>
+      </div>
+      <article class="workspace bl-card bl-home-pending-card">
+        <h3 class="bl-card-title">Pending collections</h3>
+        <div id="bl-home-pending"></div>
+      </article>
+      <div class="metric-strip" id="todayMetrics"></div>
+      <div class="work-grid">
+        <article class="workspace span-2">
+          <div class="panel-heading"><div><h3>Today’s visit register</h3><p>Latest showroom visitors recorded by staff</p></div><button class="link-button" data-go="visit">Add visit</button></div>
+          <div class="table-scroll"><table><thead><tr><th>Time</th><th>Customer</th><th>Mobile</th><th>Purpose</th><th>Interest</th><th>Staff</th><th>Next action</th></tr></thead><tbody id="todayVisitsTable"></tbody></table></div>
+        </article>
+        <article class="workspace">
+          <div class="panel-heading"><div><h3>Follow-ups due</h3><p>Call or message before the day ends</p></div><button class="link-button" data-go="followups">View all</button></div>
+          <div class="simple-list" id="dueFollowups"></div>
+        </article>
+        <article class="workspace">
+          <div class="panel-heading"><div><h3>Customer occasions</h3><p>Birthdays and anniversaries</p></div></div>
+          <div class="simple-list" id="occasionsList"></div>
+        </article>
+        <article class="workspace">
+          <div class="panel-heading"><div><h3>Customers to reconnect</h3><p>No visit during the last 90 days</p></div><button class="link-button" data-report="inactive">Print list</button></div>
+          <div class="simple-list" id="inactiveList"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="page" id="visitPage">
+      <div class="page-heading"><div><p class="kicker">VISIT DESK</p><h2>Find customer by mobile number</h2><p>Existing number adds a visit to the customer. A new number creates a new customer.</p></div></div>
+      <div class="phone-desk">
+        <div class="phone-entry">
+          <label for="visitPhone">Customer mobile number</label>
+          <div class="phone-input-row"><span>+91</span><input id="visitPhone" inputmode="numeric" maxlength="10" placeholder="Enter 10-digit mobile number" autocomplete="off"><button class="button primary" id="findCustomer">Find customer</button></div>
+          <small>Spaces and country codes are cleaned automatically. Duplicate records are not created silently.</small>
+        </div>
+        <div id="visitLookupResult" class="lookup-result empty-state"><b>Start with the mobile number</b><span>The customer’s last visit and preferences will appear here.</span></div>
+      </div>
+      <div class="visit-guide">
+        <div><b>1</b><span><strong>Enter mobile</strong><small>Search the customer database</small></span></div>
+        <div><b>2</b><span><strong>Confirm customer</strong><small>Check name and last visit</small></span></div>
+        <div><b>3</b><span><strong>Save today’s visit</strong><small>Add interest and next follow-up</small></span></div>
+      </div>
+    </section>
+
+    <section class="page" id="customersPage">
+      <div class="page-heading"><div><p class="kicker">CUSTOMER DIRECTORY</p><h2>Customers</h2><p>Search profiles, visit history, jewellery interests and upcoming follow-ups.</p></div><div class="heading-actions"><button class="button secondary" id="exportCustomers">Export Excel</button><button class="button primary" data-go="visit">+ New customer visit</button></div></div>
+      <div class="filters"><input id="customerSearch" placeholder="Search name, mobile, area or interest"><select id="customerGroupFilter"><option value="all">All customer groups</option></select><select id="customerActivityFilter"><option value="all">Any last visit</option><option value="30">Visited within 30 days</option><option value="90">Inactive 90+ days</option><option value="180">Inactive 180+ days</option></select></div>
+      <div class="table-card"><div class="table-scroll"><table><thead><tr><th>Customer</th><th>Mobile</th><th>Area</th><th>Group</th><th>Visits</th><th>Last visit</th><th>Last interest</th><th>Next follow-up</th><th></th></tr></thead><tbody id="customersTable"></tbody></table></div><div class="table-footer" id="customerTableFooter"></div></div>
+    </section>
+
+    <section class="page" id="followupsPage">
+      <div class="page-heading"><div><p class="kicker">CUSTOMER FOLLOW-UP</p><h2>Follow-ups</h2><p>Prioritise overdue work and record the result of every call or message.</p></div><button class="button primary" id="newFollowup">+ Add follow-up</button></div>
+      <div class="status-tabs" id="followupTabs"><button class="active" data-status="open">Open</button><button data-status="today">Today</button><button data-status="overdue">Overdue</button><button data-status="upcoming">Upcoming</button><button data-status="completed">Completed</button></div>
+      <div class="followup-list" id="followupList"></div>
+    </section>
+
+    <section class="page" id="groupsPage">
+      <div class="page-heading"><div><p class="kicker">SEGMENTATION</p><h2>Customer Groups</h2><p>Create clear audiences for staff follow-ups and safe festival campaigns.</p></div><button class="button primary" id="newGroup">+ Create manual group</button></div>
+      <div class="info-bar"><strong>Smart groups update automatically.</strong><span>Campaign batches remain fixed snapshots, preventing duplicate or missing recipients while sending.</span></div>
+      <div class="group-grid" id="groupGrid"></div>
+    </section>
+
+    <section class="page" id="campaignsPage">
+      <div class="page-heading"><div><p class="kicker">FESTIVAL & CUSTOMER ENGAGEMENT</p><h2>Campaigns</h2><p>Select a customer group, prepare the message and send safely from the owner’s phone.</p></div><span class="quiet-badge">Manual WhatsApp queue</span></div>
+      <div class="campaign-grid">
+        <article class="workspace campaign-form-card">
+          <div class="panel-heading"><div><h3>Prepare campaign</h3><p>A saved batch will not change after the queue is created.</p></div></div>
+          <div class="form-grid">
+            <label><span>Campaign name</span><input id="campaignName" value="Deepavali customer wishes"></label>
+            <label><span>Festival / occasion</span><select id="campaignOccasion"><option>Deepavali</option><option>Pongal</option><option>Tamil New Year</option><option>Akshaya Tritiya</option><option>Aadi offers</option><option>Wedding season</option><option>New arrivals</option><option>Custom message</option></select></label>
+            <label><span>Customer group</span><select id="campaignGroup"></select></label>
+            <label><span>Sending channel</span><select id="campaignChannel"><option value="whatsapp">WhatsApp</option><option value="sms">Normal SMS from owner phone</option></select></label>
+            <label><span>Language</span><select id="campaignLanguage"><option value="english">English</option><option value="tamil">Tamil</option><option value="both">Tamil + English</option></select></label>
+            <label class="full"><span>Message</span><textarea id="campaignMessage" rows="7">Dear {name}, warm Deepavali wishes from our shop. Visit us to discover our latest festive collections. Thank you for being our valued customer.</textarea><small>Use {name} for personalisation.</small></label>
+            <label class="full upload-field"><span>Optional campaign image</span><input id="campaignImage" type="file" accept="image/*"><small>WhatsApp Web/mobile will open with text. The selected image can be downloaded and attached manually.</small></label>
+          </div>
+        </article>
+        <aside class="campaign-side">
+          <div class="workspace batch-summary"><p class="micro-label">BATCH PREVIEW</p><div><span>Eligible customers</span><b id="eligibleCount">0</b></div><div><span>Opted out</span><b id="optoutCount">0</b></div><div><span>Duplicate numbers removed</span><b id="duplicateCount">0</b></div><div><span>Sending channel</span><b id="campaignChannelLabel">WhatsApp</b></div><button class="button primary full-button" id="createBatch">Review & create batch</button></div>
+          <div class="workspace queue-card"><div class="panel-heading"><div><h3>Sending queue</h3><p id="queueStatus">No active batch</p></div><strong id="queueCounter">0 / 0</strong></div><div id="queueCustomer" class="queue-customer empty-state"><b>Create a batch to begin</b><span>Recipients will be sent one at a time.</span></div><div class="queue-actions"><button class="button primary" id="sendNext" disabled>Open WhatsApp</button><button class="button secondary" id="skipNext" disabled>Skip</button></div></div>
+        </aside>
+      </div>
+      <div class="table-card campaign-history-card"><div class="panel-heading"><div><h3>Campaign history</h3><p>Saved recipient counts and sending progress</p></div></div><div class="table-scroll"><table><thead><tr><th>Created</th><th>Campaign</th><th>Group</th><th>Recipients</th><th>Opened</th><th>Skipped</th><th>Status</th></tr></thead><tbody id="campaignHistory"></tbody></table></div></div>
+    </section>
+
+    <section class="page" id="reportsPage">
+      <div class="page-heading"><div><p class="kicker">EXPORT & PRINT</p><h2>Reports</h2><p>Download Excel data or produce clean A4 sheets for daily shop use.</p></div></div>
+      <div class="bl-filter-bar">
+        <label class="bl-filter"><span>From</span><input type="date" id="bRepFrom"></label>
+        <label class="bl-filter"><span>To</span><input type="date" id="bRepTo"></label>
+        <button class="button secondary" onclick="document.getElementById('bRepFrom').value='';document.getElementById('bRepTo').value='';">Clear dates</button>
+        <span class="quiet-badge">Date range applies to Sales, Outstanding, Collections, Old Gold &amp; GST reports.</span>
+      </div>
+      <div class="report-grid" id="reportGrid">
+        <article class="report-card bl-rep-card"><div class="report-code">S01</div><h3>Sales Report</h3><p>All bills with totals, paid and due. Filter by date range.</p><div><button class="button secondary" data-bexport="sales">Excel</button><button class="button primary" data-bprint="sales">Print A4</button></div></article>
+        <article class="report-card bl-rep-card"><div class="report-code">S02</div><h3>Outstanding / Pending</h3><p>Customers with balance due, highest first.</p><div><button class="button secondary" data-bexport="outstanding">Excel</button><button class="button primary" data-bprint="outstanding">Print A4</button></div></article>
+        <article class="report-card bl-rep-card"><div class="report-code">S03</div><h3>Day-End / Collections</h3><p>Daily collections split by Cash, UPI and Card.</p><div><button class="button secondary" data-bexport="collections">Excel</button><button class="button primary" data-bprint="collections">Print A4</button></div></article>
+        <article class="report-card bl-rep-card"><div class="report-code">S04</div><h3>Old Gold Report</h3><p>Old-gold exchanges with weight, purity and credit.</p><div><button class="button secondary" data-bexport="oldgold">Excel</button><button class="button primary" data-bprint="oldgold">Print A4</button></div></article>
+        <article class="report-card bl-rep-card"><div class="report-code">S05</div><h3>Repairs Report</h3><p>Repair jobs with status and expected dates.</p><div><button class="button secondary" data-bexport="repairs">Excel</button><button class="button primary" data-bprint="repairs">Print A4</button></div></article>
+        <article class="report-card bl-rep-card"><div class="report-code">S06</div><h3>Estimates & Orders</h3><p>Open estimates and booked orders with advances.</p><div><button class="button secondary" data-bexport="ordersest">Excel</button><button class="button primary" data-bprint="ordersest">Print A4</button></div></article>
+        <article class="report-card bl-rep-card"><div class="report-code">S07</div><h3>GST Summary</h3><p>Taxable value and GST collected on GST bills.</p><div><button class="button secondary" data-bexport="gst">Excel</button><button class="button primary" data-bprint="gst">Print A4</button></div></article>
+        <article class="report-card"><div class="report-code">R01</div><h3>Customer Master</h3><p>Customer details, visit totals, last interest and next follow-up.</p><div><button class="button secondary" data-export="customers">Excel</button><button class="button primary" data-print="customers">Print A4</button></div></article>
+        <article class="report-card"><div class="report-code">R02</div><h3>Daily Visit Register</h3><p>Customers who visited on the selected date, with purpose and staff.</p><label>Report date<input type="date" id="reportDate"></label><div><button class="button secondary" data-export="visits">Excel</button><button class="button primary" data-print="visits">Print A4</button></div></article>
+        <article class="report-card"><div class="report-code">R03</div><h3>Follow-ups Due</h3><p>Open and overdue follow-ups for calling or WhatsApp action.</p><div><button class="button secondary" data-export="followups">Excel</button><button class="button primary" data-print="followups">Print A4</button></div></article>
+        <article class="report-card"><div class="report-code">R04</div><h3>Inactive Customers</h3><p>Customers who have not visited during the last 90 days.</p><div><button class="button secondary" data-export="inactive">Excel</button><button class="button primary" data-print="inactive">Print A4</button></div></article>
+        <article class="report-card"><div class="report-code">R05</div><h3>Customer Groups</h3><p>Group membership and contact list for staff verification.</p><div><button class="button secondary" data-export="groups">Excel</button><button class="button primary" data-print="groups">Print A4</button></div></article>
+        <article class="report-card"><div class="report-code">R06</div><h3>Campaign History</h3><p>Batch recipients, sent, skipped and remaining totals.</p><div><button class="button secondary" data-export="campaigns">Excel</button><button class="button primary" data-print="campaigns">Print A4</button></div></article>
+      </div>
+    </section>
+
+    <section class="page" id="activityPage">
+      <div class="page-heading"><div><p class="kicker">ACCOUNTABILITY</p><h2>Activity Log</h2><p>Customer creation, visits, follow-ups, groups, campaigns and exports.</p></div><button class="button secondary" id="exportActivity">Export log</button></div>
+      <div class="activity-list" id="activityList"></div>
+    </section>
+
+    <section class="page" id="staffPage">
+      <div class="page-heading"><div><p class="kicker">TEAM ACCOUNTABILITY</p><h2>Staff & Attendance</h2><p>Add staff names and record who attended each customer, checked in and checked out.</p></div><button class="button primary" id="newStaff">+ Add staff</button></div>
+      <div class="metric-strip" id="staffMetrics"></div>
+      <div class="work-grid">
+        <article class="workspace span-2"><div class="panel-heading"><div><h3>Staff directory</h3><p>Name, phone, role and today’s attendance</p></div></div><div class="table-scroll"><table><thead><tr><th>Staff</th><th>Phone</th><th>Role</th><th>Today</th><th>Working time</th><th>Action</th></tr></thead><tbody id="staffTable"></tbody></table></div></article>
+        <article class="workspace"><div class="panel-heading"><div><h3>Recent attendance</h3><p>Latest check-in and check-out records</p></div></div><div class="simple-list" id="attendanceList"></div></article>
+      </div>
+    </section>
+
+    <section class="page" id="compliancePage">
+      <div class="page-heading"><div><p class="kicker">PRIVACY OPERATIONS</p><h2>Privacy & Compliance</h2><p>Record customer consent, rights requests, grievances and security incidents with accountable follow-through.</p></div><div class="heading-actions"><button class="button secondary" data-open-privacy>Privacy notice</button><button class="button primary" id="newPrivacyRequest">+ Record request</button></div></div>
+      <div class="metric-strip" id="complianceMetrics"></div>
+      <div class="work-grid">
+        <article class="workspace span-2"><div class="panel-heading"><div><h3>Customer privacy requests</h3><p>Access, correction, erasure, consent withdrawal and grievances</p></div></div><div class="table-scroll"><table><thead><tr><th>Received</th><th>Customer</th><th>Request</th><th>Status</th><th>Assigned</th><th>Target date</th><th>Action</th></tr></thead><tbody id="privacyRequestTable"></tbody></table></div></article>
+        <article class="workspace"><div class="panel-heading"><div><h3>Consent quality</h3><p>Marketing communication eligibility</p></div></div><div class="simple-list" id="consentSummary"></div></article>
+        <article class="workspace"><div class="panel-heading"><div><h3>Security incident register</h3><p>Owner-only operational record</p></div><button class="link-button" id="newIncident">Record incident</button></div><div class="simple-list" id="incidentList"></div></article>
+      </div>
+      <div class="compliance-note"><b>Compliance-ready, not legal certification.</b><span>Policies, contracts, staff training, incident response and professional legal/security review remain necessary outside the software.</span></div>
+    </section>
+
+    <section class="page" id="settingsPage">
+      <div class="page-heading"><div><p class="kicker">APPLICATION PREFERENCES</p><h2>Settings</h2><p>Choose the language and comfortable reading size for this device.</p></div></div>
+      <div class="settings-grid">
+        <article class="workspace settings-card">
+          <div class="panel-heading"><div><h3>Application language</h3><p>The complete interface, messages and report headings will use this language.</p></div></div>
+          <label class="setting-field"><span>Display language</span><select id="settingLanguage"><option value="en">English</option><option value="ta">தமிழ்</option></select></label>
+          <div class="setting-note">English remains the default. Customer names, areas and notes stay exactly as entered.</div>
+        </article>
+        <article class="workspace settings-card">
+          <div class="panel-heading"><div><h3>Text size</h3><p>Increase readability without changing the professional layout.</p></div></div>
+          <div class="text-size-options" id="textSizeOptions">
+            <button data-size="standard"><b>A</b><span>Standard</span><small>15px</small></button>
+            <button data-size="comfortable" class="active"><b>A</b><span>Comfortable</span><small>16px · Default</small></button>
+            <button data-size="large"><b>A</b><span>Large</span><small>18px</small></button>
+          </div>
+          <div class="text-preview"><small>PREVIEW</small><strong>Customer visit and follow-up information</strong><span>Clear text for owners and staff of every age group.</span></div>
+        </article>
+        <article class="workspace settings-card span-2">
+          <div class="panel-heading"><div><h3>Current device preference</h3><p>These choices are saved in this browser and applied whenever the CRM is opened.</p></div></div>
+          <div class="settings-summary"><div><span>Language</span><b id="currentLanguageLabel">English</b></div><div><span>Text size</span><b id="currentTextSizeLabel">Comfortable</b></div><div><span>Session</span><b id="currentSessionLabel">Local browser</b></div><div><span>Font</span><b>IBM Plex Sans / Noto Sans Tamil</b></div></div>
+        </article>
+        <article class="workspace settings-card span-2">
+          <div class="panel-heading"><div><h3>Cloud migration & recovery</h3><p>Import this browser’s tested CRM data once, or review recoverable customer records.</p></div></div>
+          <div class="settings-actions"><button class="button primary" id="importToCloud">Import browser data to cloud</button><button class="button secondary" id="openTrash">Customer trash</button><button class="button secondary" id="signOutButton">Sign out</button></div>
+          <div class="setting-note">Import is owner-only. Records moved to Trash remain recoverable; payments should be reversed, never erased.</div>
+        </article>
+        <article class="workspace settings-card span-2">
+          <div class="panel-heading"><div><h3>Billing &amp; backup</h3><p>Shop GSTIN, invoice settings and a full local backup you can restore on another device.</p></div></div>
+          <div class="settings-actions">
+            <button class="button primary" id="bl-openBilling">Billing settings</button>
+            <button class="button secondary" id="bl-backupBtn">Download backup</button>
+            <button class="button secondary" id="bl-restoreBtn">Restore from file</button>
+            <input type="file" id="bl-restoreFile" accept="application/json" hidden>
+          </div>
+          <div class="setting-note">Backup is owner-only and includes bills, customers, repairs, estimates, orders and settings from this device.</div><div class="setting-note"><button class="button secondary" onclick="ThangamOS.requestNotifications()">Enable PWA Notifications</button> Offline test reminders work while the app/browser is running; true closed-app push will be connected in the Supabase phase.</div>
+        </article>
+        <article class="workspace settings-card span-2">
+          <div class="panel-heading"><div><h3>Privacy contact</h3><p>Shown in the customer notice and rights-request records.</p></div></div>
+          <div class="form-grid settings-form"><label><span>Responsible person</span><input id="privacyContactName" placeholder="Owner / privacy contact"></label><label><span>Contact mobile or email</span><input id="privacyContactValue" placeholder="Mobile number or email"></label><label class="full"><span>Default retention note</span><input id="retentionNote" placeholder="Keep only while required for service or applicable law"></label></div>
+          <div class="settings-actions"><button class="button primary" id="savePrivacySettings">Save privacy settings</button><button class="button secondary" data-open-privacy>Preview customer notice</button></div>
+        </article>
+      </div>
+    </section>
+      <section class="page" id="crmhubPage">
+      <div class="page-heading"><div><h2>CRM Hub</h2><p>Every customer-relationship tool in one place.</p></div></div>
+      <div class="hub-grid">
+        <button class="hub-tile" data-page="customers"><span class="hub-ic">👤</span><b>Customers</b><small>Profiles, history, consent</small></button>
+        <button class="hub-tile" data-page="accounts"><span class="hub-ic">₹</span><b>Client Accounts</b><small>Bills, dues, payments</small></button>
+        <button class="hub-tile" data-page="visit"><span class="hub-ic">🚪</span><b>Quick Visit</b><small>Log a showroom visit</small></button>
+        <button class="hub-tile" data-page="followups"><span class="hub-ic">🔔</span><b>Follow-ups</b><small id="hub-followups">Pending reminders</small></button>
+        <button class="hub-tile" data-page="groups"><span class="hub-ic">🏷️</span><b>Customer Groups</b><small>Segments & tags</small></button>
+        <button class="hub-tile" data-page="campaigns"><span class="hub-ic">📣</span><b>Campaigns</b><small>WhatsApp / SMS blasts</small></button>
+        <button class="hub-tile" data-page="reports"><span class="hub-ic">📊</span><b>Reports</b><small>CRM analytics</small></button>
+        <button class="hub-tile" data-page="staff"><span class="hub-ic">🧑‍💼</span><b>Staff & Attendance</b><small>Team & shifts</small></button>
+        <button class="hub-tile" data-page="compliance"><span class="hub-ic">🛡️</span><b>Privacy & Compliance</b><small>Consent & requests</small></button>
+        <button class="hub-tile" data-page="activity"><span class="hub-ic">🧾</span><b>Activity Log</b><small>Audit trail</small></button>
+      </div>
+    </section>
+
+    <section class="page" id="paymentfollowupsPage">
+      <div class="page-heading"><div><p class="kicker">RECEIVABLES</p><h2>Payment Follow-ups</h2><p>Overdue, today and upcoming customer balance commitments.</p></div></div>
+      <div class="metric-strip"><div class="metric"><span>Overdue</span><strong id="tosFuOver">0</strong></div><div class="metric"><span>Today</span><strong id="tosFuToday">0</strong></div><div class="metric"><span>Upcoming</span><strong id="tosFuUp">0</strong></div></div>
+      <div class="followup-list" id="tosFollowList"></div>
+    </section>
+
+    <section class="page" id="posPage">
+      <div class="page-heading"><div><h2>POS Billing</h2><p>Create a jewellery sale. Tick GST Bill only when a tax invoice is needed.</p></div>
+        <div class="bl-head-actions"><span class="bl-invtag" id="bl-invno">New bill</span></div></div>
+      <div class="bl-pos-grid">
+        <div class="bl-pos-main">
+          <article class="workspace bl-card">
+            <h3 class="bl-card-title">Customer</h3>
+            <div class="bl-form-grid">
+              <label>Mobile number<input id="bl-phone" inputmode="numeric" placeholder="10-digit mobile" onblur="Billing.lookupCustomer()"></label>
+              <label>Name<input id="bl-name" placeholder="Customer name"></label>
+              <label>Address<input id="bl-address" placeholder="Door / street"></label>
+              <label>Place *<input id="bl-place" list="bl-place-list" placeholder="Town / village (required)" required></label><datalist id="bl-place-list"></datalist>
+              <label>PIN<input id="bl-pin" inputmode="numeric" placeholder="PIN code"></label>
+              <label>Email<input id="bl-email" type="email" placeholder="Optional"></label>
+            </div>
+          </article>
+          <article class="workspace bl-card">
+            <h3 class="bl-card-title">Add item</h3>
+            <div class="bl-item-grid">
+              <label class="bl-col-2">Description<input id="bl-idesc" placeholder="Item name / tag / HUID"></label>
+              <label>HUID<input id="bl-ihuid" placeholder="Optional"></label>
+              <label>Purity<select id="bl-ipurity"><option value="22K">22K</option><option value="24K">24K</option><option value="18K">18K</option><option value="Silver">Silver</option><option value="—">—</option></select></label>
+              <label>Net wt (g)<input id="bl-iwt" type="number" step=".001" placeholder="0.000"></label>
+              <label>Rate ₹/g<input id="bl-irate" type="number" step=".01" placeholder="0.00"></label>
+              <label>Making ₹<input id="bl-icharge" type="number" step=".01" value="0"></label>
+              <label>Wastage g<input id="bl-iwastage" type="number" step=".001" value="0" placeholder="0.000"></label>
+              <label class="bl-photo-field">Item photo
+                <input id="bl-iphoto" type="file" accept="image/*" onchange="Billing.captureItemPhoto(this)">
+              </label>
+              <div class="bl-photo-prev"><img id="bl-iphoto-prev" alt=""></div>
+              <button class="button primary bl-add" onclick="Billing.addItem()">+ Add item</button>
+            </div>
+            <div class="table-scroll bl-items-scroll">
+              <table class="bl-table"><thead><tr><th>Item</th><th>HUID</th><th>Purity</th><th class="bl-r">Wt g</th><th class="bl-r">Rate</th><th class="bl-r">Making</th><th class="bl-r">Wastage g</th><th class="bl-r">Amount</th><th></th></tr></thead>
+              <tbody id="bl-items"></tbody></table>
+            </div>
+          </article>
+          <article class="workspace bl-card">
+            <div class="bl-card-head"><h3 class="bl-card-title">Old gold exchange</h3><button class="button secondary" id="bl-ogToggle" onclick="Billing.toggleExchange()">+ Add exchange</button></div>
+            <div id="bl-ogBody" class="bl-hidden">
+              <div id="bl-ogList"></div>
+              <button class="bl-link" onclick="Billing.addOldGold()">+ Another old-gold item</button>
+              <div class="bl-og-summary"><span>Gross <b id="bl-ogGrossTotal">0.000 g</b></span><span>Pure <b id="bl-ogPureTotal">0.000 g</b></span><span>Credit <b id="bl-ogApplied">₹0.00</b></span></div>
+            </div>
+          </article>
+        </div>
+        <aside class="bl-pos-side">
+          <article class="workspace bl-card bl-summary-card">
+            <h3 class="bl-card-title">Payment &amp; finalize</h3>
+            <div class="bl-sum-row"><span>Subtotal</span><b id="bl-subtotal">₹0.00</b></div>
+            <label class="bl-inline">Discount ₹<input id="bl-discount" type="number" step=".01" value="0" oninput="Billing.calc()"></label>
+            <label class="bl-check"><input type="checkbox" id="bl-gstToggle" onchange="Billing.toggleGstUI()"> GST Bill</label>
+            <label class="bl-inline bl-gstRateWrap bl-hidden" id="bl-gstRateWrap">GST %<input id="bl-gstRate" type="number" step=".01" oninput="Billing.calc()"></label>
+            <div class="bl-sum-row bl-gst-row bl-hidden"><span>Taxable value</span><b id="bl-taxable">₹0.00</b></div>
+            <div class="bl-sum-row bl-gst-row bl-hidden"><span id="bl-cgstLabel">CGST</span><b id="bl-cgstAmt">₹0.00</b></div>
+            <div class="bl-sum-row bl-gst-row bl-hidden"><span id="bl-sgstLabel">SGST</span><b id="bl-sgstAmt">₹0.00</b></div>
+            <div class="bl-sum-row"><span>Old gold credit</span><b id="bl-credit">− ₹0.00</b></div>
+            <div class="bl-sum-row bl-hidden" id="bl-advRow"><span>Order advance adjusted</span><b id="bl-advance">− ₹0.00</b></div>
+            <div class="bl-sum-row bl-sum-total"><span>Payable</span><b id="bl-payable">₹0.00</b></div>
+            <div class="bl-pay-block">
+              <div class="bl-pay-head"><span>Paid now</span><button type="button" class="bl-link" onclick="Billing.addPayment()">+ Add payment (split)</button></div>
+              <div id="bl-payList"></div>
+              <div class="bl-pay-subrow"><span>Total paid</span><b id="bl-paidTotal">₹0.00</b></div>
+            </div>
+            <div class="bl-sum-row bl-sum-due"><span>Balance due</span><b id="bl-due">₹0.00</b></div>
+            <div class="tos-follow-box" id="tosPosFollow">
+              <b>Balance follow-up</b><small>Use when customer promises to pay later.</small>
+              <label>Promised / follow-up date<input id="tos-follow-date" type="date"></label>
+              <label>Note<input id="tos-follow-note" placeholder="e.g. Will pay after 3 days"></label>
+            </div>
+            <div class="bl-actions">
+              <button class="button primary bl-full" onclick="Billing.finalize()">Finalize bill</button>
+              <button class="button secondary" onclick="Billing.printA4()" id="bl-printBtn" disabled>Print A4 invoice</button>
+              <p class="bl-print-note">Tip: in the print dialog → More settings, turn off "Headers and footers" once to remove the browser's URL/date line.</p>
+              <button class="button secondary" onclick="BillingPages.saveEstimate()">Save as estimate</button>
+              <button class="button secondary" onclick="Billing.saveDraft()">Save draft</button>
+              <button class="button secondary" onclick="Billing.holdBill()">Hold</button>
+              <button class="button secondary" onclick="Billing.resumeHeld()">Resume held</button>
+              <button class="button secondary" onclick="Billing.resetBill()">Clear</button>
+            </div>
+          </article>
+        </aside>
+      </div>
+    </section>
+
+    <section class="page" id="estimatesPage">
+      <div class="page-heading"><div><h2>Estimates</h2><p>Price quotes you can convert into a bill later.</p></div></div>
+      <div class="table-card"><div class="table-scroll"><table><thead><tr><th>Estimate</th><th>Customer</th><th class="bl-r">Amount</th><th></th></tr></thead><tbody id="bl-est-body"></tbody></table></div></div>
+    </section>
+
+    <section class="page" id="ordersPage">
+      <div class="page-heading"><div><h2>Orders &amp; Advance</h2><p>Book custom orders, take an advance, and bill on delivery.</p></div></div>
+      <article class="workspace bl-card">
+        <h3 class="bl-card-title">Book an order</h3>
+        <div class="bl-form-grid">
+          <label>Mobile number<input id="bl-ord-phone" inputmode="numeric" placeholder="10-digit mobile" onblur="BillingPages.orderLookup()"></label>
+          <label>Customer name<input id="bl-ord-name" placeholder="Auto-fills from mobile"></label>
+          <label class="bl-col-2">Item / description<input id="bl-ord-item"></label>
+          <label>Advance ₹<input id="bl-ord-advance" type="number" step=".01" value="0"></label>
+          <label>Delivery date<input id="bl-ord-date" type="date"></label>
+          <label class="bl-col-2">Note<input id="bl-ord-note"></label>
+          <label class="bl-photo-field">Reference photo<input id="bl-ord-photo" type="file" accept="image/*" onchange="BillingPages.orderPhoto(this)"></label>
+          <div class="bl-photo-prev"><img id="bl-ord-photo-prev" alt=""></div>
+          <button class="button primary" onclick="BillingPages.saveOrder()">Book order</button>
+        </div>
+      </article>
+      <div class="table-card"><div class="table-scroll"><table><thead><tr><th>Customer</th><th>Item</th><th>Delivery</th><th class="bl-r">Advance</th><th>Status</th><th></th></tr></thead><tbody id="bl-ord-body"></tbody></table></div></div>
+    </section>
+
+    <section class="page" id="salesPage">
+      <div class="page-heading"><div><h2>Sales Register</h2><p>Every finalized bill, newest first.</p></div>
+        <label class="top-search"><span>⌕</span><input id="bl-sales-search" placeholder="Search bill, name or mobile" oninput="BillingPages.renderSales()"></label></div>
+      <div class="bl-filter-bar">
+        <label class="bl-filter"><span>From</span><input type="date" id="bl-sales-from" oninput="BillingPages.renderSales()"></label>
+        <label class="bl-filter"><span>To</span><input type="date" id="bl-sales-to" oninput="BillingPages.renderSales()"></label>
+        <label class="bl-filter bl-filter-grow"><span>Customer</span><input id="bl-sales-cust" placeholder="Name or mobile" oninput="BillingPages.renderSales()"></label>
+        <button class="button secondary bl-filter-clear" onclick="BillingPages.clearSalesFilters()">Clear</button>
+      </div>
+      <div class="metric-strip"><div class="metric"><span>Total billed</span><strong id="bl-sales-total">₹0</strong></div><div class="metric"><span>Collected</span><strong id="bl-sales-paid">₹0</strong></div><div class="metric"><span>Outstanding</span><strong id="bl-sales-due">₹0</strong></div></div>
+      <div class="table-card"><div class="table-scroll"><table><thead><tr><th>Bill</th><th>Customer</th><th class="bl-r">Total</th><th class="bl-r">Paid</th><th class="bl-r">Due</th><th></th></tr></thead><tbody id="bl-sales-body"></tbody></table></div></div>
+    </section>
+
+    <section class="page" id="accountsPage">
+      <div class="page-heading"><div><h2>Client Accounts</h2><p>One customer financial record for new bills, old balances, payments and history.</p></div><div class="heading-actions"><button class="button secondary" onclick="BillingPages.addAccountCustomer()">+ Add Customer</button><button class="button secondary" onclick="BillingPages.addOldBill()">+ Add Old Bill</button><button class="button primary" onclick="BillingPages.addLoan()">+ Add Loan</button></div></div>
+      <div class="filters"><label class="top-search"><span>⌕</span><input id="bl-acc-search" placeholder="Search name, mobile or place" oninput="BillingPages.renderAccounts()"></label><span class="quiet-badge">Old bills, POS bills and loans use the same customer account</span></div>
+      <div class="table-card"><div class="table-scroll"><table><thead><tr><th>Customer</th><th class="bl-r">Bills</th><th class="bl-r">Billed</th><th class="bl-r">Paid</th><th class="bl-r">Due</th><th></th></tr></thead><tbody id="bl-acc-body"></tbody></table></div></div>
+    </section>
+
+    <section class="page" id="placesPage">
+      <div class="page-heading"><div><h2>Places</h2><p>Your shop by area — clients, dues and sales for every town. Tap a place to see its customers and full history.</p></div></div>
+      <div class="filters"><label class="top-search"><span>⌕</span><input id="bl-places-search" placeholder="Search place or code" oninput="BillingPages.renderPlaces()"></label></div>
+      <div id="bl-places-list"></div>
+      <div id="bl-place-detail" class="bl-hidden"></div>
+    </section>
+
+    <section class="page" id="repairsPage">
+      <div class="page-heading"><div><h2>Repairs</h2><p>Log repair jobs and track them to delivery.</p></div></div>
+      <article class="workspace bl-card">
+        <h3 class="bl-card-title">Log a repair</h3>
+        <div class="bl-form-grid">
+          <label>Mobile number<input id="bl-rep-phone" inputmode="numeric" placeholder="10-digit mobile" onblur="BillingPages.repairLookup()"></label>
+          <label>Customer name<input id="bl-rep-name" placeholder="Auto-fills from mobile"></label>
+          <label class="bl-col-2">Item<input id="bl-rep-item" placeholder="e.g. Broken ring"></label>
+          <label class="bl-col-2">Problem<input id="bl-rep-problem" placeholder="Description"></label>
+          <label>Expected date<input id="bl-rep-date" type="date"></label>
+          <label class="bl-photo-field">Repair photo<input id="bl-rep-photo" type="file" accept="image/*" onchange="BillingPages.repairPhoto(this)"></label>
+          <div class="bl-photo-prev"><img id="bl-rep-photo-prev" alt=""></div>
+          <button class="button primary" onclick="BillingPages.saveRepair()">Save repair</button>
+        </div>
+      </article>
+      <div class="table-card"><div class="table-scroll"><table><thead><tr><th>Customer</th><th>Item</th><th>Expected</th><th>Status</th><th></th></tr></thead><tbody id="bl-rep-body"></tbody></table></div></div>
+    </section>
+
+    <section class="page" id="dayendPage">
+      <div class="page-heading"><div><h2>Day-End Closing</h2><p id="bl-de-date">Today's cash, collections and closing.</p></div>
+        <span class="bl-de-status" id="bl-de-status"></span></div>
+
+      <div class="bl-de-metrics" id="bl-de-metrics"></div>
+
+      <div class="bl-de-grid">
+        <article class="workspace bl-card">
+          <h3 class="bl-card-title">Cash reconciliation</h3>
+          <label class="bl-de-line"><span>Opening float (₹)</span><input id="bl-de-float" type="number" step="1" value="0" oninput="BillingPages.recalcDayEnd()"></label>
+          <div class="bl-de-line"><span>+ Cash collected</span><b id="bl-de-cashin">₹0</b></div>
+          <div class="bl-de-line"><span>− Cash expenses</span><b id="bl-de-expout">₹0</b></div>
+          <div class="bl-de-line bl-de-exp"><span>= Expected in drawer</span><b id="bl-de-expected">₹0</b></div>
+          <label class="bl-de-line"><span>Cash counted (₹)</span><input id="bl-de-counted" type="number" step="1" placeholder="Count the drawer" oninput="BillingPages.recalcDayEnd()"></label>
+          <div class="bl-de-line bl-de-var"><span>Variance</span><b id="bl-de-variance">₹0</b></div>
+        </article>
+
+        <article class="workspace bl-card">
+          <h3 class="bl-card-title">Cash expenses (give-outs)</h3>
+          <div class="bl-de-exprow">
+            <input id="bl-de-expnote" placeholder="e.g. Tea, wages, courier">
+            <input id="bl-de-expamt" type="number" step="1" placeholder="₹">
+            <button class="button secondary" onclick="BillingPages.addExpense()">Add</button>
+          </div>
+          <div id="bl-de-explist"></div>
+        </article>
+      </div>
+
+      <div class="bl-de-actions">
+        <button class="button primary" onclick="BillingPages.closeDay()">Close day &amp; print slip</button>
+        <button class="button secondary" onclick="BillingPages.printDaySlipCurrent()">Print slip only</button>
+      </div>
+
+      <article class="workspace bl-card">
+        <h3 class="bl-card-title">Past closings</h3>
+        <div class="table-scroll"><table><thead><tr><th>Date</th><th class="bl-r">Bills</th><th class="bl-r">Sales</th><th class="bl-r">Collected</th><th class="bl-r">Variance</th><th></th></tr></thead><tbody id="bl-de-history"></tbody></table></div>
+      </article>
+    </section>
+    <!-- ============ END BILLING PAGES ============ -->
+
+  </main>
+
+  <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-heading"><div><p class="kicker" id="modalKicker">JEWELOS CRM</p><h2 id="modalTitle">Add record</h2></div><button id="closeModal" aria-label="Close">×</button></div>
+      <form id="modalForm"><div id="modalBody"></div><div class="modal-actions"><button type="button" class="button secondary" id="cancelModal">Cancel</button><button type="submit" class="button primary" id="modalSubmit">Save</button></div></form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="confirmBackdrop" aria-hidden="true">
+    <div class="modal confirm-modal"><div class="confirm-mark">✓</div><p class="kicker">CONFIRM CAMPAIGN BATCH</p><h2>Check recipients before sending</h2><div id="confirmBatchSummary" class="confirmation-summary"></div><label class="confirm-check"><input type="checkbox" id="batchConfirmed"><span>I checked the customer group, message, recipient count and opt-out exclusions.</span></label><div class="modal-actions"><button class="button secondary" id="cancelBatch">Go back</button><button class="button primary" id="confirmBatch" disabled>Create fixed batch</button></div></div>
+  </div>
+
+  <div class="modal-backdrop" id="profileBackdrop" aria-hidden="true">
+    <div class="modal wide-modal"><div class="modal-heading"><div><p class="kicker">CUSTOMER PROFILE</p><h2 id="profileTitle">Customer</h2></div><button id="closeProfile" aria-label="Close">×</button></div><div id="profileBody"></div></div>
+  </div>
+
+  <div class="modal-backdrop" id="messageBackdrop" aria-hidden="true">
+    <div class="modal message-modal">
+      <div class="modal-heading"><div><p class="kicker">CUSTOMER MESSAGE REVIEW</p><h2 id="messageModalTitle">Preview WhatsApp message</h2></div><button id="closeMessage" aria-label="Close">×</button></div>
+      <div class="message-recipient"><div><span>CUSTOMER</span><strong id="messageRecipientName">Customer</strong><small id="messageReason">Customer follow-up</small></div><div><span>MOBILE NUMBER</span><strong id="messageRecipientPhone">—</strong></div></div>
+      <div class="message-controls">
+        <label><span>Message purpose</span><select id="messageTemplateType"><option value="followup">General follow-up</option><option value="newarrival">New arrival</option><option value="visit">Visit reminder</option><option value="festival">Festival greeting</option><option value="birthday">Birthday greeting</option><option value="anniversary">Anniversary greeting</option><option value="custom">Custom message</option></select></label>
+        <label><span>Message language</span><select id="messageLanguage"><option value="en">English</option><option value="ta">தமிழ்</option><option value="both">தமிழ் + English</option></select></label>
+      </div>
+      <label class="message-editor"><span>Message preview — editable</span><textarea id="messageEditor" rows="9"></textarea><small><b id="messageCharCount">0</b> characters · Review the customer name, number and wording before continuing.</small></label>
+      <div class="message-advice">The CRM opens the owner’s WhatsApp or SMS application with this edited text. It does not send anything automatically.</div>
+      <div class="modal-actions message-actions"><button class="button secondary" id="resetMessage">Reset template</button><button class="button secondary" id="cancelMessage">Cancel</button><button class="button primary" id="confirmOpenMessage">Open WhatsApp</button></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="privacyNoticeBackdrop" aria-hidden="true">
+    <div class="modal wide-modal privacy-notice"><div class="modal-heading"><div><p class="kicker">CUSTOMER PRIVACY NOTICE</p><h2>How customer information is used</h2></div><button id="closePrivacyNotice" aria-label="Close">×</button></div><div id="privacyNoticeBody"></div><div class="modal-actions"><button class="button primary" id="acknowledgePrivacyNotice">Close notice</button></div></div>
+  </div>
+
+  <div class="modal-backdrop" id="adminEditBackdrop" aria-hidden="true">
+    <div class="modal wide-modal"><div class="modal-heading"><div><p class="kicker">SHOP ACCESS CONTROL</p><h2 id="adminEditTitle">Manage subscription</h2></div><button id="closeAdminEdit" aria-label="Close">×</button></div><form id="adminEditForm"><div id="adminEditBody"></div><div class="modal-actions"><button type="button" class="button secondary" id="cancelAdminEdit">Cancel</button><button type="submit" class="button primary">Save access control</button></div></form></div>
+  </div>
+
+
+  <!-- A4 invoice print area (filled by Billing.buildPrint) -->
+  <div id="bl-print" class="bl-print-area"></div>
+  <div id="bl-dayslip" class="bl-dayslip-area"></div>
+  <div id="bl-report-print" class="bl-report-area"></div>
+
+  <!-- Client Account detail modal -->
+  <div class="bl-acc-modal" id="blAccModal" hidden>
+    <div class="bl-acc-sheet">
+      <div class="bl-acc-head">
+        <div><h2 id="blAccName">Customer</h2><p id="blAccPhone"></p></div>
+        <button class="bl-acc-close" onclick="BillingPages.closeAccount()">✕</button>
+      </div>
+      <div class="bl-acc-balance"><span>ACCOUNT BALANCE</span><strong id="blAccBalance">₹0</strong></div>
+      <div class="bl-acc-pay" id="blAccPaySection">
+        <p class="bl-acc-label">LOG PAYMENT</p>
+        <select id="blAccInvoice" class="bl-acc-select"></select>
+        <div class="bl-acc-payrow">
+          <input id="blAccAmount" type="number" inputmode="numeric" placeholder="Amount (₹)">
+          <select id="blAccMode"><option>Cash</option><option>UPI</option><option>Card</option></select>
+        </div>
+        <button class="bl-acc-apply" onclick="BillingPages.applyAccountPayment()">APPLY</button>
+      </div>
+      <div class="bl-acc-contact">
+        <button class="bl-acc-wa" id="blAccWa">WHATSAPP</button>
+        <button class="bl-acc-call" id="blAccCall">CALL</button>
+      </div>
+      <div class="bl-acc-ledger">
+        <p class="bl-acc-label">INVOICE LEDGER</p>
+        <div class="bl-acc-stats">
+          <div><span>BILLS</span><b id="blAccBills">0</b></div>
+          <div><span>PENDING</span><b id="blAccPending" class="bl-danger">0</b></div>
+          <div><span>LIFETIME</span><b id="blAccLifetime">₹0</b></div>
+        </div>
+        <div id="blAccInvList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/billing-sync.js"></script>
+  <script src="js/invoice-template.js"></script>
+  <script src="js/billing.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/crm.js"></script>
+  <script src="js/billing-pages.js"></script>
+  <script src="js/bridge.js"></script>
+  <script src="js/settings-extra.js"></script>
+  <script src="js/reports-billing.js"></script>
+  <script src="js/thangamos.js"></script>
+  <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
+  <nav class="bottom-bar" id="bottomBar">
+    <button class="bb-item active" data-page="home"><span>🏠</span>Home</button>
+    <button class="bb-item" data-page="pos"><span>⚡</span>POS</button>
+    <button class="bb-item" data-page="customers"><span>👤</span>Clients</button>
+    <button class="bb-item" data-page="sales"><span>🧾</span>Sales</button>
+    <button class="bb-item" id="bbMore"><span>☰</span>More</button>
+  </nav>
+  <script src="js/module-shell.js"></script>
+</body>
+</html>
